@@ -15,7 +15,7 @@ This is a voting canister for the Internet Computer (IC) built in Rust. It allow
 ### Steps
 1. **Clone the Repository**:
    ```bash
-   git clone <repo_url>
+   git clone https://github.com/Wambita/voting.git
    cd voting_canister
    ```
 
