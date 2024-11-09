@@ -1,0 +1,6 @@
+service : {
+    "add_option": (text) -> (text);
+    "vote": (text) -> (text);
+    "get_results": () -> (vec record { text; nat });
+    "reset_poll": () -> (text);
+}
