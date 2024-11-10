@@ -1,6 +1,5 @@
-[package]
-name = "voting_canister"
-version = "0.1.0"
-edition = "2018"
-
-
+[workspace]
+members = [
+    "src/voting_backend"
+]
+resolver = "2"

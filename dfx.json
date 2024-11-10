@@ -2,8 +2,8 @@
   "canisters": {
     "voting_canister": {
       "type": "rust",
-      "package": "voting_canister",  
-      "candid": "src/voting_canister.did",
+      "package": "voting_backend",  
+      "candid": "src/voting_backend/voting_canister.did",
       "metadata": [
         {
           "name": "candid:service"
