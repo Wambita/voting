@@ -1,18 +1,18 @@
 {
-    "canisters": {
-      "voting_canister": {
-        "type": "rust",
-        "candid": "src/voting_canister.did",
-        "wasm": "target/wasm32-unknown-unknown/release/voting_canister.wasm",
-        "build": "cargo build --target wasm32-unknown-unknown --release"
-      }
-    },
-    "networks": {
-      "local": {
-        "bind": "127.0.0.1:8000",
-        "type": "ephemeral"
-      }
-    },
-    "version": 0.10
-  }
-  
+  "canisters": {
+    "voting_canister": {
+      "type": "rust",
+      "package": "voting_canister",  
+      "candid": "src/voting_canister.did",
+      "wasm": "target/wasm32-unknown-unknown/release/voting_canister.wasm",
+      "build": "cargo build --target wasm32-unknown-unknown --release"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 0.10
+}
