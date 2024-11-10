@@ -1,55 +1,92 @@
+use candid::{CandidType, Deserialize};
+use ic_cdk_macros::{query, update};
+use std::cell::RefCell;
 use std::collections::HashMap;
-use ic_cdk::storage;
-use ic_cdk_macros::{init, query, update};
 
-// Define the main data structure
+// Define structures for Candidate and VotingSession
+#[derive(CandidType, Deserialize, Clone, Debug)]
+struct Candidate {
+    id: String,
+    name: String,
+    votes: u32,
+}
+
 #[derive(Default)]
-struct Poll {
-    options: HashMap<String, u32>,  // Option name and vote count
+struct VotingSession {
+    candidates: HashMap<String, Candidate>,
+    voters: HashMap<String, bool>, // To track if a user has already voted
 }
 
-// Initialize the canister
-#[init]
-fn init() {
-    storage::get_mut::<Poll>().options = HashMap::new();
+// State to hold the voting session
+thread_local! {
+    static STATE: RefCell<VotingSession> = RefCell::new(VotingSession::default());
 }
 
-// Function to add an option to the poll
+// Add a new candidate
 #[update]
-fn add_option(option: String) -> String {
-    let poll = storage::get_mut::<Poll>();
-    if poll.options.contains_key(&option) {
-        "Option already exists!".to_string()
-    } else {
-        poll.options.insert(option.clone(), 0);
-        format!("Option '{}' added.", option)
+fn add_candidate(id: String, name: String) -> Result<String, String> {
+    if id.is_empty() || name.is_empty() {
+        return Err("Invalid input: All fields must be non-empty.".to_string());
     }
-}
 
-// Function to vote for an option
-#[update]
-fn vote(option: String) -> String {
-    let poll = storage::get_mut::<Poll>();
-    match poll.options.get_mut(&option) {
-        Some(count) => {
-            *count += 1;
-            format!("Voted for '{}'.", option)
+    STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        if state.candidates.contains_key(&id) {
+            Err(format!("Candidate with ID {} already exists.", id))
+        } else {
+            state.candidates.insert(id.clone(), Candidate { id: id.clone(), name, votes: 0 });
+            Ok(format!("Candidate with ID {} added successfully.", id))
         }
-        None => "Option not found!".to_string(),
-    }
+    })
 }
 
-// Function to get the current results of the poll
+// Cast a vote for a candidate
+#[update]
+fn vote(candidate_id: String, voter_id: String) -> Result<String, String> {
+    STATE.with(|state| {
+        let mut state = state.borrow_mut();
+
+        // Check if the voter has already voted
+        if state.voters.contains_key(&voter_id) {
+            return Err(format!("Voter with ID {} has already voted.", voter_id));
+        }
+
+        // Find the candidate and increment their vote count
+        if let Some(candidate) = state.candidates.get_mut(&candidate_id) {
+            candidate.votes += 1;
+            state.voters.insert(voter_id, true); // Mark voter as having voted
+            Ok(format!("Vote cast for candidate {} successfully.", candidate_id))
+        } else {
+            Err(format!("Candidate with ID {} not found.", candidate_id))
+        }
+    })
+}
+
+// Retrieve the current vote count for all candidates
 #[query]
 fn get_results() -> HashMap<String, u32> {
-    let poll = storage::get::<Poll>();
-    poll.options.clone()
+    STATE.with(|state| {
+        let state = state.borrow();
+        state.candidates.iter().map(|(id, candidate)| (id.clone(), candidate.votes)).collect()
+    })
 }
 
-// Function to reset the poll
+// Retrieve candidate information by ID
+#[query]
+fn get_candidate(candidate_id: String) -> Result<Candidate, String> {
+    STATE.with(|state| {
+        let state = state.borrow();
+        state.candidates.get(&candidate_id).cloned().ok_or_else(|| format!("Candidate with ID {} not found.", candidate_id))
+    })
+}
+
+// Reset the voting session (e.g., for testing or restarting)
 #[update]
-fn reset_poll() -> String {
-    let poll = storage::get_mut::<Poll>();
-    poll.options.clear();
-    "Poll has been reset.".to_string()
+fn reset_voting_session() -> String {
+    STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        state.candidates.clear();
+        state.voters.clear();
+        "Voting session reset successfully.".to_string()
+    })
 }
